@@ -1,0 +1,340 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Users, Save, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function AssignmentForm({ assignment, actionType, onSubmit, onCancel }) {
+  const [formData, setFormData] = useState(assignment || {
+    employee_id: "",
+    target_unit: "",
+    operation_number: 1,
+    cancellation_type: 1,
+    soldier_position: "",
+    intake_start_date: "",
+    intake_time: "",
+    intake_reason: "",
+    placement_start_date: "",
+    placement_time: "",
+    placement_reason: "",
+    skip_structural_auth_check: false,
+    skip_auth_check: false,
+    distributed_management: false,
+    action_type: actionType || "הזנה"
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    await onSubmit(formData);
+    setIsSubmitting(false);
+  };
+
+  const handleChange = (field, value) => {
+    if (field === 'intake_reason' || field === 'placement_reason') {
+      // הגבלה לשני תווים
+      if (typeof value === 'string' && value.length > 2) {
+        return;
+      }
+    }
+    
+    // ולידציה לתאריכים - וידוא פורמט YYYY-MM-DD
+    if ((field === 'intake_start_date' || field === 'placement_start_date') && value) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(value)) {
+        return; // לא מאפשר ערכים לא תקינים
+      }
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <Card className="shadow-xl bg-white/95 backdrop-blur-sm border-0">
+        <CardHeader className={`p-6 border-b ${
+          actionType === 'מחיקה' 
+            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-100' 
+            : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'
+        }`}>
+          <CardTitle className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${
+              actionType === 'מחיקה' 
+                ? 'bg-red-100' 
+                : 'bg-blue-100'
+            }`}>
+              <Users className={`w-5 h-5 ${
+                actionType === 'מחיקה' 
+                  ? 'text-red-600' 
+                  : 'text-blue-600'
+              }`} />
+            </div>
+            <span className="text-xl font-bold text-slate-800">
+              {actionType === 'מחיקה' ? 'מחיקת שיוך ארגוני' : 'הזנת שיוך ארגוני חדש'}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="employee_id" className="text-sm font-semibold text-slate-700">
+                  מספר אישי של העובד *
+                </Label>
+                <Input
+                  id="employee_id"
+                  value={formData.employee_id}
+                  onChange={(e) => handleChange('employee_id', e.target.value)}
+                  placeholder="הכנס מספר אישי"
+                  required
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="target_unit" className="text-sm font-semibold text-slate-700">
+                  {actionType === 'מחיקה' ? 'היחידה ממנה נרצה למחוק *' : 'היחידה אליה נרצה לקלוט או להציב *'}
+                </Label>
+                <Input
+                  id="target_unit"
+                  value={formData.target_unit}
+                  onChange={(e) => handleChange('target_unit', e.target.value)}
+                  placeholder="מספר יחידה (עד 8 ספרות)"
+                  required
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                  maxLength={8}
+                />
+              </div>
+
+              {actionType === 'הזנה' && (
+                <div className="space-y-2">
+                  <Label htmlFor="operation_number" className="text-sm font-semibold text-slate-700">
+                    מספר פעולה (1-4) *
+                  </Label>
+                  <Select
+                    value={formData.operation_number?.toString()}
+                    onValueChange={(value) => handleChange('operation_number', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר מספר פעולה" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {actionType === 'מחיקה' && (
+                <div className="space-y-2">
+                  <Label htmlFor="cancellation_type" className="text-sm font-semibold text-slate-700">
+                    סוג הביטול הרצוי (1-3) *
+                  </Label>
+                  <Select
+                    value={formData.cancellation_type?.toString()}
+                    onValueChange={(value) => handleChange('cancellation_type', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר סוג ביטול" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="soldier_position" className="text-sm font-semibold text-slate-700">
+                  משרת החייל
+                </Label>
+                <Input
+                  id="soldier_position"
+                  value={formData.soldier_position}
+                  onChange={(e) => handleChange('soldier_position', e.target.value)}
+                  placeholder="משרת החייל (לא חובה)"
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="intake_start_date" className="text-sm font-semibold text-slate-700">
+                  {actionType === 'מחיקה' ? 'תאריך בו החייל נקלט *' : 'תאריך תחילת קליטה *'}
+                </Label>
+                <Input
+                  id="intake_start_date"
+                  type="date"
+                  value={formData.intake_start_date}
+                  onChange={(e) => handleChange('intake_start_date', e.target.value)}
+                  required
+                  min="1900-01-01"
+                  max="2099-12-31"
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="intake_time" className="text-sm font-semibold text-slate-700">
+                  שעת קליטה *
+                </Label>
+                <Input
+                  id="intake_time"
+                  type="time"
+                  value={formData.intake_time}
+                  onChange={(e) => handleChange('intake_time', e.target.value)}
+                  required
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="intake_reason" className="text-sm font-semibold text-slate-700">
+                  סיבת קליטה (2 תווים) *
+                </Label>
+                <Input
+                  id="intake_reason"
+                  value={formData.intake_reason}
+                  onChange={(e) => handleChange('intake_reason', e.target.value)}
+                  placeholder="עד 2 תווים"
+                  maxLength={2}
+                  required
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="placement_start_date" className="text-sm font-semibold text-slate-700">
+                  {actionType === 'מחיקה' ? 'תאריך הצבה *' : 'תאריך תחילת הצבה *'}
+                </Label>
+                <Input
+                  id="placement_start_date"
+                  type="date"
+                  value={formData.placement_start_date}
+                  onChange={(e) => handleChange('placement_start_date', e.target.value)}
+                  required
+                  min="1900-01-01"
+                  max="2099-12-31"
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="placement_time" className="text-sm font-semibold text-slate-700">
+                  {actionType === 'מחיקה' ? 'שעת הצבה *' : 'שעת תחילת הצבה *'}
+                </Label>
+                <Input
+                  id="placement_time"
+                  type="time"
+                  value={formData.placement_time}
+                  onChange={(e) => handleChange('placement_time', e.target.value)}
+                  required
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="placement_reason" className="text-sm font-semibold text-slate-700">
+                  סיבת הצבה (2 תווים) *
+                </Label>
+                <Input
+                  id="placement_reason"
+                  value={formData.placement_reason}
+                  onChange={(e) => handleChange('placement_reason', e.target.value)}
+                  placeholder="עד 2 תווים"
+                  maxLength={2}
+                  required
+                  className="bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+                />
+              </div>
+            </div>
+
+            {actionType === 'מחיקה' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-red-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="skip_structural_auth_check"
+                    checked={formData.skip_structural_auth_check}
+                    onCheckedChange={(checked) => handleChange('skip_structural_auth_check', checked)}
+                  />
+                  <Label htmlFor="skip_structural_auth_check" className="text-sm">
+                    דילוג על בדיקת הרשאות מבניות
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="skip_auth_check"
+                    checked={formData.skip_auth_check}
+                    onCheckedChange={(checked) => handleChange('skip_auth_check', checked)}
+                  />
+                  <Label htmlFor="skip_auth_check" className="text-sm">
+                    דילוג על בדיקת הרשאות
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="distributed_management"
+                    checked={formData.distributed_management}
+                    onCheckedChange={(checked) => handleChange('distributed_management', checked)}
+                  />
+                  <Label htmlFor="distributed_management" className="text-sm">
+                    ניהול מבוזר
+                  </Label>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-4 pt-6 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="px-6 hover:bg-slate-50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px-6 ${
+                  actionType === 'מחיקה'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                } text-white shadow-lg`}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'שומר...' : (actionType === 'מחיקה' ? 'מחק שיוך' : 'שמור שיוך')}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
