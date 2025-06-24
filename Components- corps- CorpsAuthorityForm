@@ -1,0 +1,185 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Shield, Save, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function CorpsAuthorityForm({ item, actionType, operationType, onSubmit, onCancel }) {
+  const [formData, setFormData] = useState(item || {
+    employee_id: "",
+    operation_type: operationType || "הזנת חיל",
+    corps_code: "",
+    authority_code: "",
+    start_date: "",
+    distributed_management: false,
+    action_type: actionType || "הזנה"
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    await onSubmit(formData);
+    setIsSubmitting(false);
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const isCorps = formData.operation_type === 'הזנת חיל';
+  const isAuthority = formData.operation_type === 'הזנת סמכות';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <Card className="shadow-xl bg-white/95 backdrop-blur-sm border-0">
+        <CardHeader className={`p-6 border-b ${
+          actionType === 'מחיקה' 
+            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-100' 
+            : isCorps
+              ? 'bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-100'
+              : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-100'
+        }`}>
+          <CardTitle className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${
+              actionType === 'מחיקה' 
+                ? 'bg-red-100' 
+                : isCorps
+                  ? 'bg-indigo-100'
+                  : 'bg-purple-100'
+            }`}>
+              <Shield className={`w-5 h-5 ${
+                actionType === 'מחיקה' 
+                  ? 'text-red-600' 
+                  : isCorps
+                    ? 'text-indigo-600'
+                    : 'text-purple-600'
+              }`} />
+            </div>
+            <span className="text-xl font-bold text-slate-800">
+              {actionType} {isCorps ? 'חיל' : 'סמכות'}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="employee_id" className="text-sm font-semibold text-slate-700">
+                  מספר אישי של העובד *
+                </Label>
+                <Input
+                  id="employee_id"
+                  value={formData.employee_id}
+                  onChange={(e) => handleChange('employee_id', e.target.value)}
+                  placeholder="הכנס מספר אישי"
+                  required
+                  className="bg-white border-slate-200 focus:border-indigo-400 focus:ring-indigo-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="start_date" className="text-sm font-semibold text-slate-700">
+                  תאריך התחלה *
+                </Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => handleChange('start_date', e.target.value)}
+                  required
+                  className="bg-white border-slate-200 focus:border-indigo-400 focus:ring-indigo-400"
+                />
+              </div>
+
+              {isCorps && (
+                <div className="space-y-2">
+                  <Label htmlFor="corps_code" className="text-sm font-semibold text-slate-700">
+                    קוד חיל *
+                  </Label>
+                  <Input
+                    id="corps_code"
+                    value={formData.corps_code}
+                    onChange={(e) => handleChange('corps_code', e.target.value)}
+                    placeholder="קוד חיל (8 ספרות)"
+                    required
+                    maxLength={8}
+                    pattern="\d{8}"
+                    className="bg-white border-slate-200 focus:border-indigo-400 focus:ring-indigo-400"
+                  />
+                </div>
+              )}
+
+              {isAuthority && (
+                <div className="space-y-2">
+                  <Label htmlFor="authority_code" className="text-sm font-semibold text-slate-700">
+                    קוד סמכות *
+                  </Label>
+                  <Input
+                    id="authority_code"
+                    value={formData.authority_code}
+                    onChange={(e) => handleChange('authority_code', e.target.value)}
+                    placeholder="קוד סמכות (8 ספרות)"
+                    required
+                    maxLength={8}
+                    pattern="\d{8}"
+                    className="bg-white border-slate-200 focus:border-indigo-400 focus:ring-indigo-400"
+                  />
+                </div>
+              )}
+               <div className="flex items-center space-x-2 pt-6">
+                  <Checkbox 
+                    id="distributed_management"
+                    checked={formData.distributed_management}
+                    onCheckedChange={(checked) => handleChange('distributed_management', checked)}
+                  />
+                  <Label htmlFor="distributed_management" className="text-sm">
+                    האם ניהול מבוזר
+                  </Label>
+                </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-6 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="px-6 hover:bg-slate-50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px-6 ${
+                  actionType === 'מחיקה'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                    : isCorps
+                      ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700'
+                      : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700'
+                } text-white shadow-lg`}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'שומר...' : (actionType === 'מחיקה' ? 'מחק' : 'שמור')}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
