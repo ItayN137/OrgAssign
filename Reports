@@ -1,0 +1,332 @@
+
+import React, { useState, useEffect } from "react";
+import { OrganizationalAssignment, ServiceType, Corps, Authority } from "@/entities/all";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  FileText,
+  Download,
+  Calendar,
+  TrendingUp,
+  PieChart,
+  Users
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
+
+export default function ReportsPage() {
+  const [allData, setAllData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState("כל התקופות");
+  const [statusFilter, setStatusFilter] = useState("הכל");
+  const [actionFilter, setActionFilter] = useState("הכל");
+
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [allData, dateFilter, statusFilter, actionFilter]);
+
+  const loadAllData = async () => {
+    setIsLoading(true);
+    try {
+      // טעינת נתונים רק מהשבוע האחרון
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
+      const [orgData, serviceData, corpsData, authData] = await Promise.all([
+        OrganizationalAssignment.list("-created_date"),
+        ServiceType.list("-created_date"),
+        Corps.list("-created_date"),
+        Authority.list("-created_date")
+      ]);
+
+      // סינון לשבוע האחרון בלבד
+      const filterByWeek = (data) => data.filter(item =>
+        new Date(item.created_date) >= weekAgo
+      );
+
+      const combined = [
+        ...filterByWeek(orgData).map(item => ({ ...item, type: 'שיוך ארגוני' })),
+        ...filterByWeek(serviceData).map(item => ({ ...item, type: 'סוג שירות' })),
+        ...filterByWeek(corpsData).map(item => ({ ...item, type: 'חיל' })),
+        ...filterByWeek(authData).map(item => ({ ...item, type: 'סמכות' }))
+      ];
+
+      setAllData(combined);
+    } catch (error) {
+      console.error("שגיאה בטעינת הנתונים:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const applyFilters = () => {
+    let filtered = [...allData];
+
+    if (dateFilter === "השבוע") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      filtered = filtered.filter(item => new Date(item.created_date) >= weekAgo);
+    } else if (dateFilter === "החודש") {
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      filtered = filtered.filter(item => new Date(item.created_date) >= monthAgo);
+    }
+
+    if (statusFilter !== "הכל") {
+      filtered = filtered.filter(item => item.status === statusFilter);
+    }
+
+    if (actionFilter !== "הכל") {
+      filtered = filtered.filter(item => item.action_type === actionFilter);
+    }
+
+    setFilteredData(filtered);
+  };
+
+  const exportToCSV = () => {
+    const headers = ["תאריך", "סוג פעולה", "מספר עובד", "פעולה", "סטטוס"];
+    const csvData = [
+      headers.join(","),
+      ...filteredData.map(item => [
+        format(new Date(item.created_date), "dd/MM/yyyy HH:mm"),
+        item.type,
+        item.employee_id,
+        item.action_type,
+        item.status
+      ].map(field => `"${field}"`).join(","))
+    ].join("\n");
+
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `דוח_פעולות_${format(new Date(), "dd-MM-yyyy")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const getStatistics = () => {
+    const pending = filteredData.filter(item => item.status === 'נפל בביצוע').length;
+    const completed = filteredData.filter(item => item.status === 'בוצע').length;
+    const failed = filteredData.filter(item => item.status === 'נכשל').length;
+    const insertions = filteredData.filter(item => item.action_type === 'הזנה').length;
+    const deletions = filteredData.filter(item => item.action_type === 'מחיקה').length;
+
+    return { pending, completed, failed, insertions, deletions, total: filteredData.length };
+  };
+
+  const stats = getStatistics();
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto p-6 bg-gradient-to-bl from-slate-50 via-blue-50/30 to-indigo-50/20 rounded-lg">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800">דוחות ואנליטיקה</h1>
+              <p className="text-slate-600">סיכום ונתוני פעולות המערכת (השבוע האחרון)</p>
+            </div>
+          </div>
+          <Button
+            onClick={exportToCSV}
+            disabled={filteredData.length === 0}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            ייצא ל-CSV
+          </Button>
+        </motion.div>
+
+        {/* מסננים */}
+        <Card className="mb-8 shadow-lg bg-white/90 backdrop-blur-sm border-0">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-100">
+            <CardTitle className="text-lg font-bold text-slate-800">מסננים</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">תקופת זמן</label>
+                <Select value={dateFilter} onValueChange={setDateFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר תקופה" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="כל התקופות">כל התקופות</SelectItem>
+                    <SelectItem value="השבוע">השבוע האחרון</SelectItem>
+                    <SelectItem value="החודש">החודש האחרון</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">סטטוס</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר סטטוס" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="הכל">כל הסטטוסים</SelectItem>
+                    <SelectItem value="נפל בביצוע">נפל בביצוע</SelectItem>
+                    <SelectItem value="בוצע">בוצע</SelectItem>
+                    <SelectItem value="נכשל">נכשל</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">סוג פעולה</label>
+                <Select value={actionFilter} onValueChange={setActionFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר פעולה" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="הכל">כל הפעולות</SelectItem>
+                    <SelectItem value="הזנה">הזנה</SelectItem>
+                    <SelectItem value="מחיקה">מחיקה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* כרטיסי סטטיסטיקה */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <Card className="shadow-lg bg-white/90 backdrop-blur-sm border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">סה״כ פעולות</p>
+                  <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
+                </div>
+                <Users className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg bg-white/90 backdrop-blur-sm border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">נפל בביצוע</p>
+                  <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
+                </div>
+                <Calendar className="w-8 h-8 text-amber-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg bg-white/90 backdrop-blur-sm border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">הושלמו</p>
+                  <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-emerald-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg bg-white/90 backdrop-blur-sm border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">הזנות</p>
+                  <p className="text-2xl font-bold text-indigo-600">{stats.insertions}</p>
+                </div>
+                <PieChart className="w-8 h-8 text-indigo-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg bg-white/90 backdrop-blur-sm border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">מחיקות</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.deletions}</p>
+                </div>
+                <FileText className="w-8 h-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* טבלת נתונים מפורטת */}
+        <Card className="shadow-xl bg-white/90 backdrop-blur-sm border-0">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-100">
+            <CardTitle className="text-xl font-bold text-slate-800">
+              פירוט פעולות ({filteredData.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto max-h-96">
+              <table className="w-full">
+                <thead className="bg-slate-50 sticky top-0">
+                  <tr>
+                    <th className="text-right p-4 font-semibold">תאריך</th>
+                    <th className="text-right p-4 font-semibold">סוג פעולה</th>
+                    <th className="text-right p-4 font-semibold">מספר עובד</th>
+                    <th className="text-right p-4 font-semibold">פעולה</th>
+                    <th className="text-right p-4 font-semibold">סטטוס</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((item, index) => (
+                    <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="p-4 text-slate-600">
+                        {format(new Date(item.created_date), "dd/MM/yyyy HH:mm", { locale: he })}
+                      </td>
+                      <td className="p-4 font-medium text-slate-700">{item.type}</td>
+                      <td className="p-4">
+                        <span className="font-mono bg-slate-100 px-2 py-1 rounded">
+                          {item.employee_id}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-sm ${
+                          item.action_type === 'הזנה'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {item.action_type}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-sm ${
+                          item.status === 'בוצע'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : item.status === 'נפל בביצוע'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
