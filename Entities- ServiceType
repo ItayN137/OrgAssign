@@ -1,0 +1,89 @@
+{
+  "name": "ServiceType",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "מספר אישי של העובד"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך תחילה"
+    },
+    "service_type": {
+      "type": "string",
+      "description": "סוג שירות (עד 4 ספרות)",
+      "maxLength": 4
+    },
+    "service_subtype": {
+      "type": "string",
+      "description": "תת סוג שירות (עד 4 ספרות)",
+      "maxLength": 4
+    },
+    "service_track": {
+      "type": "string",
+      "description": "מסלול שירות (עד 4 ספרות)",
+      "maxLength": 4
+    },
+    "planned_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך סיום מתוכנן לסוג שירות (לא חובה)"
+    },
+    "entry_reason": {
+      "type": "string",
+      "description": "סיבת כניסה לסוג שירות (לא חובה)"
+    },
+    "obligation_item": {
+      "type": "string",
+      "description": "פריט התחייבות (חובה רק כאשר סוג שירות 0002,0005)"
+    },
+    "fund_center": {
+      "type": "string",
+      "description": "מרכז קרנות (חובה רק כאשר סוג שירות 0002,0005)"
+    },
+    "fund": {
+      "type": "string",
+      "description": "קרן (חובה רק כאשר סוג שירות 0002,0005)"
+    },
+    "distributed_management_indicator": {
+      "type": "boolean",
+      "description": "אינדיקציה ניהול מבוזר (רק במחיקה)"
+    },
+    "skip_authorization_check": {
+      "type": "boolean",
+      "description": "אינדיקציית דילוג בדיקת הרשאות (רק במחיקה)"
+    },
+    "update_fund_indicator": {
+      "type": "boolean",
+      "description": "אינדיקציית האם לעדכן קרן (רק במחיקה)"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "הזנה",
+        "מחיקה"
+      ],
+      "description": "סוג הפעולה"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "נפל בביצוע",
+        "בוצע",
+        "נכשל"
+      ],
+      "default": "נפל בביצוע",
+      "description": "סטטוס הפעולה"
+    }
+  },
+  "required": [
+    "employee_id",
+    "start_date",
+    "service_type",
+    "service_subtype",
+    "service_track",
+    "action_type"
+  ]
+}
