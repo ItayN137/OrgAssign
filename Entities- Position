@@ -1,0 +1,55 @@
+{
+  "name": "Position",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "מספר אישי של העובד"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך התחלה"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך סיום"
+    },
+    "position_number": {
+      "type": "string",
+      "description": "מספר משרה (עד 8 ספרות)",
+      "maxLength": 8
+    },
+    "appointment": {
+      "type": "string",
+      "description": "מינוי (לא חובה, תו אחד)",
+      "maxLength": 1
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "הזנה"
+      ],
+      "default": "הזנה",
+      "description": "סוג הפעולה"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "נפל בביצוע",
+        "בוצע",
+        "נכשל"
+      ],
+      "default": "נפל בביצוע",
+      "description": "סטטוס הפעולה"
+    }
+  },
+  "required": [
+    "employee_id",
+    "start_date",
+    "end_date",
+    "position_number",
+    "action_type"
+  ]
+}
