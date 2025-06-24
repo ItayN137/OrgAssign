@@ -1,0 +1,161 @@
+
+import React, { useState, useEffect } from "react";
+import { OrganizationalAssignment, ServiceType, Corps, Authority } from "@/entities/all";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { 
+  Users, 
+  UserCheck, 
+  Shield, 
+  Plus,
+  Clock,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Calendar
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+import StatsCards from "../components/dashboard/StatsCards";
+import RecentActions from "../components/dashboard/RecentActions";
+import QuickActions from "../components/dashboard/QuickActions";
+
+export default function Dashboard() {
+  const [orgAssignments, setOrgAssignments] = useState([]);
+  const [serviceTypes, setServiceTypes] = useState([]);
+  const [corps, setCorps] = useState([]);
+  const [authorities, setAuthorities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // טעינת נתונים רק מהשבוע האחרון
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      weekAgo.setHours(0, 0, 0, 0); // Set to start of the day for accurate comparison
+      
+      const [orgData, serviceData, corpsData, authData] = await Promise.all([
+        OrganizationalAssignment.list("-created_date", 100),
+        ServiceType.list("-created_date", 100),
+        Corps.list("-created_date", 100),
+        Authority.list("-created_date", 100)
+      ]);
+      
+      // סינון לשבוע האחרון בלבד
+      const filterByWeek = (data) => data.filter(item => 
+        new Date(item.created_date) >= weekAgo
+      );
+      
+      setOrgAssignments(filterByWeek(orgData));
+      setServiceTypes(filterByWeek(serviceData));
+      setCorps(filterByWeek(corpsData));
+      setAuthorities(filterByWeek(authData));
+    } catch (error) {
+      console.error("שגיאה בטעינת הנתונים:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const allActions = [
+    ...orgAssignments.map(item => ({ ...item, type: 'שיוך ארגוני' })),
+    ...serviceTypes.map(item => ({ ...item, type: 'סוג שירות' })),
+    ...corps.map(item => ({ ...item, type: 'חיל' })),
+    ...authorities.map(item => ({ ...item, type: 'סמכות' }))
+  ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+  const todayActions = allActions.filter(action => {
+    const today = new Date().toDateString();
+    return new Date(action.created_date).toDateString() === today;
+  });
+
+  const pendingActions = allActions.filter(action => action.status === 'נפל בביצוע');
+  // תיקון: רק הזנות מוצלחות, לא מחיקות
+  const completedInsertions = allActions.filter(action => action.status === 'בוצע' && action.action_type === 'הזנה');
+  const completedDeletions = allActions.filter(action => action.status === 'בוצע' && action.action_type === 'מחיקה');
+  const failedActions = allActions.filter(action => action.status === 'נכשל');
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+        >
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">לוח הבקרה</h1>
+            <p className="text-slate-600">ממשק ניהול פעולות עובדים - SAP (השבוע האחרון)</p>
+          </div>
+          <div className="text-sm text-slate-500">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              {new Date().toLocaleDateString('he-IL', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <StatsCards 
+            title="פעולות השבוע"
+            value={allActions.length}
+            icon={Clock}
+            bgColor="bg-blue-500"
+            trend={`${allActions.length > 0 ? 'פעיל' : 'אין פעילות'}`}
+          />
+          <StatsCards 
+            title="נפל בביצוע"
+            value={pendingActions.length}
+            icon={Clock}
+            bgColor="bg-amber-500"
+            trend={pendingActions.length > 0 ? "דורש טיפול" : "הכל מעודכן"}
+          />
+          <StatsCards 
+            title="הזנות הושלמו"
+            value={completedInsertions.length}
+            icon={CheckCircle}
+            bgColor="bg-emerald-500"
+            trend={`${Math.round((completedInsertions.length / (allActions.filter(a => a.action_type === 'הזנה').length || 1)) * 100)}% הצלחה`}
+          />
+          <StatsCards 
+            title="מחיקות הושלמו"
+            value={completedDeletions.length}
+            icon={XCircle}
+            bgColor="bg-purple-500"
+            trend={`${Math.round((completedDeletions.length / (allActions.filter(a => a.action_type === 'מחיקה').length || 1)) * 100)}% הצלחה`}
+          />
+          <StatsCards 
+            title="כל הפעולות"
+            value={allActions.length}
+            icon={TrendingUp}
+            bgColor="bg-indigo-500"
+          />
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RecentActions 
+              actions={allActions.slice(0, 15)}
+              isLoading={isLoading}
+            />
+          </div>
+
+          <div>
+            <QuickActions />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
