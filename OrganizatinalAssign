@@ -1,0 +1,118 @@
+
+import React, { useState, useEffect } from "react";
+import { OrganizationalAssignment } from "@/entities/all";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Plus, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+import AssignmentForm from "../components/organizational/AssignmentForm";
+import AssignmentList from "../components/organizational/AssignmentList";
+
+export default function OrganizationalAssignmentPage() {
+  const [assignments, setAssignments] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("הזנה");
+
+  useEffect(() => {
+    loadAssignments();
+  }, []);
+
+  const loadAssignments = async () => {
+    setIsLoading(true);
+    const data = await OrganizationalAssignment.list("-created_date");
+    setAssignments(data);
+    setIsLoading(false);
+  };
+
+  const handleSubmit = async (assignmentData) => {
+    if (editingAssignment) {
+      await OrganizationalAssignment.update(editingAssignment.id, assignmentData);
+    } else {
+      await OrganizationalAssignment.create(assignmentData);
+    }
+    setShowForm(false);
+    setEditingAssignment(null);
+    loadAssignments();
+  };
+
+  const handleEdit = (assignment) => {
+    setEditingAssignment(assignment);
+    setActiveTab(assignment.action_type);
+    setShowForm(true);
+  };
+
+  const handleNewAction = (actionType) => {
+    setActiveTab(actionType);
+    setEditingAssignment(null);
+    setShowForm(true);
+  };
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800">שיוך ארגוני</h1>
+              <p className="text-slate-600">ניהול שיוכים ארגוניים של עובדים</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => handleNewAction("הזנה")}
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              הזנה חדשה
+            </Button>
+            <Button 
+              onClick={() => handleNewAction("מחיקה")}
+              variant="outline"
+              className="border-red-200 text-red-700 hover:bg-red-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              מחיקה
+            </Button>
+          </div>
+        </motion.div>
+
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="mb-8"
+            >
+              <AssignmentForm
+                assignment={editingAssignment}
+                actionType={activeTab}
+                onSubmit={handleSubmit}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingAssignment(null);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AssignmentList 
+          assignments={assignments}
+          isLoading={isLoading}
+          onEdit={handleEdit}
+        />
+      </div>
+    </div>
+  );
+}
