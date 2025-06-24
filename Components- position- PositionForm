@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Briefcase, Save, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function PositionForm({ item, onSubmit, onCancel }) {
+  const [formData, setFormData] = useState(item || {
+    employee_id: "",
+    start_date: "",
+    end_date: "",
+    position_number: "",
+    appointment: "",
+    action_type: "הזנה"
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    await onSubmit(formData);
+    setIsSubmitting(false);
+  };
+
+  const handleChange = (field, value) => {
+    // הגבלה למספר משרה - עד 8 ספרות
+    if (field === 'position_number' && value.length > 8) {
+      return;
+    }
+    
+    // הגבלה למינוי - תו אחד בלבד
+    if (field === 'appointment' && value.length > 1) {
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <Card className="shadow-xl bg-white/95 backdrop-blur-sm border-0">
+        <CardHeader className="p-6 border-b bg-gradient-to-r from-orange-50 to-amber-50 border-orange-100">
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-orange-100">
+              <Briefcase className="w-5 h-5 text-orange-600" />
+            </div>
+            <span className="text-xl font-bold text-slate-800">
+              {item ? 'עריכת הזנת משרה' : 'הזנת משרה חדשה'}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="employee_id" className="text-sm font-semibold text-slate-700">
+                  מספר אישי של העובד *
+                </Label>
+                <Input
+                  id="employee_id"
+                  value={formData.employee_id}
+                  onChange={(e) => handleChange('employee_id', e.target.value)}
+                  placeholder="הכנס מספר אישי"
+                  required
+                  className="bg-white border-slate-200 focus:border-orange-400 focus:ring-orange-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="position_number" className="text-sm font-semibold text-slate-700">
+                  מספר משרה *
+                </Label>
+                <Input
+                  id="position_number"
+                  value={formData.position_number}
+                  onChange={(e) => handleChange('position_number', e.target.value)}
+                  placeholder="מספר משרה (עד 8 ספרות)"
+                  required
+                  maxLength={8}
+                  className="bg-white border-slate-200 focus:border-orange-400 focus:ring-orange-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="start_date" className="text-sm font-semibold text-slate-700">
+                  תאריך התחלה *
+                </Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => handleChange('start_date', e.target.value)}
+                  required
+                  min="1900-01-01"
+                  max="2099-12-31"
+                  className="bg-white border-slate-200 focus:border-orange-400 focus:ring-orange-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="end_date" className="text-sm font-semibold text-slate-700">
+                  תאריך סיום *
+                </Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => handleChange('end_date', e.target.value)}
+                  required
+                  min="1900-01-01"
+                  max="2099-12-31"
+                  className="bg-white border-slate-200 focus:border-orange-400 focus:ring-orange-400"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="appointment" className="text-sm font-semibold text-slate-700">
+                  מינוי (לא חובה)
+                </Label>
+                <Input
+                  id="appointment"
+                  value={formData.appointment}
+                  onChange={(e) => handleChange('appointment', e.target.value)}
+                  placeholder="תו אחד בלבד"
+                  maxLength={1}
+                  className="bg-white border-slate-200 focus:border-orange-400 focus:ring-orange-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-6 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="px-6 hover:bg-slate-50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'שומר...' : 'שמור משרה'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
