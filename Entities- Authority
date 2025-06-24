@@ -1,0 +1,48 @@
+{
+  "name": "Authority",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string",
+      "description": "מספר אישי של העובד"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "תאריך התחלה"
+    },
+    "authority_code": {
+      "type": "string",
+      "description": "קוד סמכות (עד 8 ספרות)",
+      "maxLength": 8
+    },
+    "distributed_management": {
+      "type": "boolean",
+      "description": "האם ניהול מבוזר"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "הזנה",
+        "מחיקה"
+      ],
+      "description": "סוג הפעולה"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "נפל בביצוע",
+        "בוצע",
+        "נכשל"
+      ],
+      "default": "נפל בביצוע",
+      "description": "סטטוס הפעולה"
+    }
+  },
+  "required": [
+    "employee_id",
+    "start_date",
+    "authority_code",
+    "action_type"
+  ]
+}
