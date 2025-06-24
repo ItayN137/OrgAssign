@@ -1,0 +1,134 @@
+
+import React from 'react';
+import { format, isValid, parseISO } from "date-fns";
+import { he } from "date-fns/locale";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Users, UserCheck, Shield, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const actionIcons = {
+  'שיוך ארגוני': Users,
+  'סוג שירות': UserCheck,
+  'חיל וסמכות': Shield
+};
+
+const statusColors = {
+  'נפל בביצוע': 'bg-amber-100 text-amber-800 border-amber-200',
+  'בוצע': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  'נכשל': 'bg-red-100 text-red-800 border-red-200'
+};
+
+const statusIcons = {
+  'נפל בביצוע': Clock,
+  'בוצע': CheckCircle,
+  'נכשל': XCircle
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'לא ידוע';
+  
+  try {
+    const date = new Date(dateString);
+    if (isValid(date)) {
+      return format(date, "dd/MM/yyyy HH:mm", { locale: he });
+    }
+    return 'תאריך לא תקין';
+  } catch (error) {
+    return 'תאריך לא תקין';
+  }
+};
+
+export default function RecentActions({ actions, isLoading }) {
+  return (
+    <Card className="overflow-hidden shadow-xl bg-white/90 backdrop-blur-sm border-0">
+      <CardHeader className="p-6 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+        <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-blue-600" />
+          פעולות אחרונות
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/50">
+                <TableHead className="text-right font-semibold">סוג פעולה</TableHead>
+                <TableHead className="text-right font-semibold">מספר עובד</TableHead>
+                <TableHead className="text-right font-semibold">תאריך</TableHead>
+                <TableHead className="text-right font-semibold">סטטוס</TableHead>
+                <TableHead className="text-right font-semibold">פעולה</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <AnimatePresence mode="wait">
+                {isLoading ? (
+                  Array(8).fill(0).map((_, i) => (
+                    <TableRow key={i} className="animate-pulse">
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-12 rounded-full" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  actions.map((action, index) => {
+                    const IconComponent = actionIcons[action.type];
+                    const StatusIcon = statusIcons[action.status];
+                    
+                    return (
+                      <motion.tr
+                        key={action.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="hover:bg-blue-50/30 transition-colors border-b border-slate-100/50"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-blue-50">
+                              {IconComponent && <IconComponent className="w-4 h-4 text-blue-600" />}
+                            </div>
+                            <span className="font-medium text-slate-700">{action.type || 'לא ידוע'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-slate-800 bg-slate-100 px-2 py-1 rounded">
+                            {action.employee_id || 'לא ידוע'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {formatDate(action.created_date)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="secondary"
+                            className={`${statusColors[action.status] || 'bg-gray-100 text-gray-800 border-gray-200'} border flex items-center gap-1 w-fit`}
+                          >
+                            {StatusIcon && <StatusIcon className="w-3 h-3" />}
+                            {action.status || 'לא ידוע'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline"
+                            className={action.action_type === 'הזנה' ? 'text-emerald-700 border-emerald-200' : 'text-red-700 border-red-200'}
+                          >
+                            {action.action_type || 'לא ידוע'}
+                          </Badge>
+                        </TableCell>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </AnimatePresence>
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
