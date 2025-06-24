@@ -1,0 +1,103 @@
+
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Users, UserCheck, Shield, Plus, ArrowLeft, Key, Briefcase } from "lucide-react"; // Added Briefcase icon
+import { motion } from "framer-motion";
+
+const quickActions = [
+  {
+    title: "שיוך ארגוני חדש",
+    description: "הוסף שיוך ארגוני לעובד",
+    icon: Users,
+    color: "from-blue-500 to-blue-600",
+    hoverColor: "hover:from-blue-600 hover:to-blue-700",
+    url: createPageUrl("OrganizationalAssignment")
+  },
+  {
+    title: "סוג שירות חדש",
+    description: "הגדר סוג שירות לעובד",
+    icon: UserCheck,
+    color: "from-emerald-500 to-emerald-600", 
+    hoverColor: "hover:from-emerald-600 hover:to-emerald-700",
+    url: createPageUrl("ServiceType")
+  },
+  {
+    title: "הוסף חיל",
+    description: "הגדר חיל לעובד",
+    icon: Shield,
+    color: "from-indigo-500 to-indigo-600",
+    hoverColor: "hover:from-indigo-600 hover:to-indigo-700",
+    url: createPageUrl("Corps")
+  },
+  {
+    title: "הוסף סמכות",
+    description: "הגדר סמכות לעובד", 
+    icon: Key,
+    color: "from-purple-500 to-purple-600",
+    hoverColor: "hover:from-purple-600 hover:to-purple-700",
+    url: createPageUrl("Authority")
+  },
+  {
+    title: "הזנת משרה", // New action title
+    description: "הגדר משרה לעובד", // New action description
+    icon: Briefcase, // New icon
+    color: "from-orange-500 to-orange-600", // New color
+    hoverColor: "hover:from-orange-600 hover:to-orange-700", // New hover color
+    url: createPageUrl("Position") // New URL
+  }
+];
+
+export default function QuickActions() {
+  return (
+    <Card className="shadow-xl bg-white/90 backdrop-blur-sm border-0">
+      <CardHeader className="p-6 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+        <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <Plus className="w-5 h-5 text-indigo-600" />
+          פעולות מהירות
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          {quickActions.map((action, index) => (
+            <motion.div
+              key={action.title}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Link to={action.url}>
+                <Button
+                  variant="ghost"
+                  className={`w-full p-4 h-auto bg-gradient-to-r ${action.color} ${action.hoverColor} text-white hover:text-white transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1`}
+                >
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="p-2 bg-white/20 rounded-lg">
+                      <action.icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 text-right">
+                      <p className="font-semibold">{action.title}</p>
+                      <p className="text-sm opacity-90">{action.description}</p>
+                    </div>
+                    <ArrowLeft className="w-4 h-4 opacity-70" />
+                  </div>
+                </Button>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200">
+          <div className="text-center">
+            <p className="text-sm text-slate-600 mb-2">💡 <strong>טיפ:</strong></p>
+            <p className="text-xs text-slate-500">
+              כל הפעולות נשמרות ומועברות לעיבוד ב-SAP אוטומטית
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
