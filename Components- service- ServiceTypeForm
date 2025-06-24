@@ -1,0 +1,307 @@
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserCheck, Save, X } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function ServiceTypeForm({ serviceType, actionType, onSubmit, onCancel }) {
+  const [formData, setFormData] = useState(serviceType || {
+    employee_id: "",
+    start_date: "",
+    service_type: "",
+    service_subtype: "",
+    service_track: "",
+    planned_end_date: "",
+    entry_reason: "",
+    obligation_item: "",
+    fund_center: "",
+    fund: "",
+    distributed_management_indicator: false,
+    skip_authorization_check: false,
+    update_fund_indicator: false,
+    action_type: actionType || "הזנה"
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    await onSubmit(formData);
+    setIsSubmitting(false);
+  };
+
+  const handleChange = (field, value) => {
+    // ולידציה לתאריכים
+    if ((field === 'start_date' || field === 'planned_end_date') && value) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(value)) {
+        // Optionally, you could set an error state here or prevent the update
+        return; 
+      }
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Updated logic for service type '0002' or '0005'
+  const isServiceType25 = formData.service_type === '0002' || formData.service_type === '0005';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <Card className="shadow-xl bg-white/95 backdrop-blur-sm border-0">
+        <CardHeader className={`p-6 border-b ${
+          actionType === 'מחיקה' 
+            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-100' 
+            : 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-100'
+        }`}>
+          <CardTitle className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${
+              actionType === 'מחיקה' 
+                ? 'bg-red-100' 
+                : 'bg-emerald-100'
+            }`}>
+              <UserCheck className={`w-5 h-5 ${
+                actionType === 'מחיקה' 
+                  ? 'text-red-600' 
+                  : 'text-emerald-600'
+              }`} />
+            </div>
+            <span className="text-xl font-bold text-slate-800">
+              {actionType === 'מחיקה' ? 'מחיקת סוג שירות' : 'הזנת סוג שירות חדש'}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="employee_id" className="text-sm font-semibold text-slate-700">
+                  מספר אישי של העובד *
+                </Label>
+                <Input
+                  id="employee_id"
+                  value={formData.employee_id}
+                  onChange={(e) => handleChange('employee_id', e.target.value)}
+                  placeholder="הכנס מספר אישי"
+                  required
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="start_date" className="text-sm font-semibold text-slate-700">
+                  תאריך תחילה *
+                </Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => handleChange('start_date', e.target.value)}
+                  required
+                  min="1900-01-01"
+                  max="2099-12-31"
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_type" className="text-sm font-semibold text-slate-700">
+                  סוג שירות *
+                </Label>
+                <Input
+                  id="service_type"
+                  value={formData.service_type}
+                  onChange={(e) => handleChange('service_type', e.target.value)}
+                  placeholder="סוג שירות (עד 4 ספרות)" 
+                  required
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                  maxLength={4} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_subtype" className="text-sm font-semibold text-slate-700">
+                  תת סוג שירות *
+                </Label>
+                <Input
+                  id="service_subtype"
+                  value={formData.service_subtype}
+                  onChange={(e) => handleChange('service_subtype', e.target.value)}
+                  placeholder="תת סוג השירות (עד 4 ספרות)" 
+                  required
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                  maxLength={4} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_track" className="text-sm font-semibold text-slate-700">
+                  מסלול שירות *
+                </Label>
+                <Input
+                  id="service_track"
+                  value={formData.service_track}
+                  onChange={(e) => handleChange('service_track', e.target.value)}
+                  placeholder="מסלול השירות (עד 4 ספרות)" 
+                  required
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                  maxLength={4} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="planned_end_date" className="text-sm font-semibold text-slate-700">
+                  תאריך סיום מתוכנן
+                </Label>
+                <Input
+                  id="planned_end_date"
+                  type="date"
+                  value={formData.planned_end_date}
+                  onChange={(e) => handleChange('planned_end_date', e.target.value)}
+                  min="1900-01-01"
+                  max="2099-12-31"
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="entry_reason" className="text-sm font-semibold text-slate-700">
+                  סיבת כניסה לסוג שירות
+                </Label>
+                <Input
+                  id="entry_reason"
+                  value={formData.entry_reason}
+                  onChange={(e) => handleChange('entry_reason', e.target.value)}
+                  placeholder="סיבת כניסה (לא חובה)"
+                  className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                />
+              </div>
+            </div>
+
+            {/* שדות חובה רק כאשר סוג שירות 0002,0005 */}
+            {isServiceType25 && actionType === 'הזנה' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-emerald-50 rounded-lg">
+                <div className="space-y-2">
+                  <Label htmlFor="obligation_item" className="text-sm font-semibold text-slate-700">
+                    פריט התחייבות *
+                  </Label>
+                  <Input
+                    id="obligation_item"
+                    value={formData.obligation_item}
+                    onChange={(e) => handleChange('obligation_item', e.target.value)}
+                    placeholder="פריט התחייבות"
+                    required
+                    className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fund_center" className="text-sm font-semibold text-slate-700">
+                    מרכז קרנות *
+                  </Label>
+                  <Input
+                    id="fund_center"
+                    value={formData.fund_center}
+                    onChange={(e) => handleChange('fund_center', e.target.value)}
+                    placeholder="מרכז קרנות"
+                    required
+                    className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fund" className="text-sm font-semibold text-slate-700">
+                    קרן *
+                  </Label>
+                  <Input
+                    id="fund"
+                    value={formData.fund}
+                    onChange={(e) => handleChange('fund', e.target.value)}
+                    placeholder="קרן"
+                    required
+                    className="bg-white border-slate-200 focus:border-emerald-400 focus:ring-emerald-400"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* אינדיקציות למחיקה */}
+            {actionType === 'מחיקה' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-red-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="distributed_management_indicator"
+                    checked={formData.distributed_management_indicator}
+                    onCheckedChange={(checked) => handleChange('distributed_management_indicator', checked)}
+                  />
+                  <Label htmlFor="distributed_management_indicator" className="text-sm">
+                    ניהול מבוזר
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="skip_authorization_check"
+                    checked={formData.skip_authorization_check}
+                    onCheckedChange={(checked) => handleChange('skip_authorization_check', checked)}
+                  />
+                  <Label htmlFor="skip_authorization_check" className="text-sm">
+                    דילוג בדיקת הרשאות
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="update_fund_indicator"
+                    checked={formData.update_fund_indicator}
+                    onCheckedChange={(checked) => handleChange('update_fund_indicator', checked)}
+                  />
+                  <Label htmlFor="update_fund_indicator" className="text-sm">
+                    עדכן קרן
+                  </Label>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-4 pt-6 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isSubmitting}
+                className="px-6 hover:bg-slate-50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                ביטול
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px-6 ${
+                  actionType === 'מחיקה'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                    : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
+                } text-white shadow-lg`}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSubmitting ? 'שומר...' : (actionType === 'מחיקה' ? 'מחק סוג שירות' : 'שמור סוג שירות')}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
