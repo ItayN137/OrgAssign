@@ -1,0 +1,116 @@
+import React, { useState, useEffect } from "react";
+import { Authority } from "@/entities/Authority";
+import { Button } from "@/components/ui/button";
+import { Key, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+import AuthorityForm from "../components/authority/AuthorityForm";
+import AuthorityList from "../components/authority/AuthorityList";
+
+export default function AuthorityPage() {
+  const [authorities, setAuthorities] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("הזנה");
+
+  useEffect(() => {
+    loadAuthorities();
+  }, []);
+
+  const loadAuthorities = async () => {
+    setIsLoading(true);
+    const data = await Authority.list("-created_date");
+    setAuthorities(data);
+    setIsLoading(false);
+  };
+
+  const handleSubmit = async (itemData) => {
+    if (editingItem) {
+      await Authority.update(editingItem.id, itemData);
+    } else {
+      await Authority.create(itemData);
+    }
+    setShowForm(false);
+    setEditingItem(null);
+    loadAuthorities();
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setActiveTab(item.action_type);
+    setShowForm(true);
+  };
+
+  const handleNewAction = (actionType) => {
+    setActiveTab(actionType);
+    setEditingItem(null);
+    setShowForm(true);
+  };
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
+              <Key className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800">ניהול סמכות</h1>
+              <p className="text-slate-600">הגדרת סמכויות לעובדים</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => handleNewAction("הזנה")}
+              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              הזנת סמכות
+            </Button>
+            <Button 
+              onClick={() => handleNewAction("מחיקה")}
+              variant="outline"
+              className="border-red-200 text-red-700 hover:bg-red-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              מחיקת סמכות
+            </Button>
+          </div>
+        </motion.div>
+
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="mb-8"
+            >
+              <AuthorityForm
+                item={editingItem}
+                actionType={activeTab}
+                onSubmit={handleSubmit}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingItem(null);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AuthorityList 
+          items={authorities}
+          isLoading={isLoading}
+          onEdit={handleEdit}
+        />
+      </div>
+    </div>
+  );
+}
